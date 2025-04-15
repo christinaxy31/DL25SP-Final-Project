@@ -66,3 +66,56 @@ class Prober(torch.nn.Module):
     def forward(self, e):
         output = self.prober(e)
         return output
+
+
+
+
+class JEPAAgent(nn.Module):
+    def __init__(self, repr_dim=256, device="cuda"):
+        super().__init__()
+        self.device = device
+        self.repr_dim = repr_dim
+        
+        # Encoder: 2-channel image -> representation
+        self.encoder = nn.Sequential(
+            nn.Conv2d(2, 16, kernel_size=5, stride=2, padding=2),  # [B, 2, 64, 64] -> [B, 16, 32, 32]
+            nn.ReLU(),
+            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # [B, 16, 32, 32] -> [B, 32, 16, 16]
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),  # [B, 32, 16, 16] -> [B, 64, 8, 8] 
+            nn.ReLU(),
+            nn.Flatten(), # [B, 64, 8, 8] -> [B, 4096]
+            nn.Linear(64 * 8 * 8, repr_dim),    # [B, 4096] -> [B, 256]
+        )
+
+        # Predictor: (s_prev, action) -> s_next_pred
+        self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
+
+    # JEPA rollout for T steps:
+    # At t = 0: use encoder to get s_0 from o_0
+    # At t = 1 to T-1: use predictor(s_{t-1}, u_{t-1}) to get s̃_t
+    # Output: a sequence of T representations [s_0, s̃_1, ..., s̃_{T-1}]
+    def forward(self, states, actions): 
+        # actions: [B, T-1, 2] 
+        # states: [num_trajectories, trajectory_length, 2, 64, 64] ([B, T, 2, 64, 64])
+        # return the representation of states: [B, T, repr_dim] 
+        """
+        states: [B, T, 2, 64, 64]
+        actions: [B, T-1, 2]
+        returns: [B, T, D]
+        """
+        B, T, _, H, W = states.shape
+        reprs = []
+
+        # Encode first observation
+        s_prev = self.encoder(states[:, 0])  # [B, 2, 64, 64] -> [B, repr_dim]
+        reprs.append(s_prev)
+
+        for t in range(T - 1):
+            a_t = actions[:, t]  # [B, 2]
+            inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
+            s_pred = self.predictor(inp)  # [B, repr_dim]
+            reprs.append(s_pred)
+            s_prev = s_pred
+
+        return torch.stack(reprs, dim=1)  # [B, T, repr_dim]
