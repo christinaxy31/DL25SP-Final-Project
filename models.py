@@ -95,27 +95,35 @@ class JEPAAgent(nn.Module):
     # At t = 0: use encoder to get s_0 from o_0
     # At t = 1 to T-1: use predictor(s_{t-1}, u_{t-1}) to get s̃_t
     # Output: a sequence of T representations [s_0, s̃_1, ..., s̃_{T-1}]
-    def forward(self, states, actions): 
-        # actions: [B, T-1, 2] 
-        # states: [num_trajectories, trajectory_length, 2, 64, 64] ([B, T, 2, 64, 64])
-        # return the representation of states: [B, T, repr_dim] 
-        """
-        states: [B, T, 2, 64, 64]
-        actions: [B, T-1, 2]
-        returns: [B, T, D]
-        """
-        B, T, _, H, W = states.shape
-        reprs = []
 
-        # Encode first observation
-        s_prev = self.encoder(states[:, 0])  # [B, 2, 64, 64] -> [B, repr_dim]
-        reprs.append(s_prev)
 
-        for t in range(T - 1):
-            a_t = actions[:, t]  # [B, 2]
-            inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
-            s_pred = self.predictor(inp)  # [B, repr_dim]
-            reprs.append(s_pred)
-            s_prev = s_pred
+   def forward(self, states, actions): 
+    # actions: [B, T-1, 2] 
+    # states: [num_trajectories, trajectory_length, 2, 64, 64] ([B, T, 2, 64, 64])
+    # return the representation of states: [B, T, repr_dim] 
+    """
+    states: [B, T, 2, 64, 64]
+    actions: [B, T-1, 2]
+    returns: [B, T, D]
+    """
 
-        return torch.stack(reprs, dim=1)  # [B, T, repr_dim]
+    B, T, _, H, W = states.shape
+    reprs = []
+
+    # Encode first observation step-by-step with shape printing
+    x = states[:, 0]  # [B, 2, 64, 64]
+    print(f"Input state[:, 0] shape: {x.shape}")
+    for i, layer in enumerate(self.encoder):
+        x = layer(x)
+        print(f"After encoder layer {i} ({layer.__class__.__name__}): {x.shape}")
+    s_prev = x  # [B, repr_dim]
+    reprs.append(s_prev)
+
+    for t in range(T - 1):
+        a_t = actions[:, t]  # [B, 2]
+        inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
+        s_pred = self.predictor(inp)  # [B, repr_dim]
+        reprs.append(s_pred)
+        s_prev = s_pred
+
+    return torch.stack(reprs, dim=1)  # [B, T, repr_dim]
