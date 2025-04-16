@@ -120,7 +120,7 @@ class ProbingEvaluator:
             for batch in tqdm(dataset, desc="Probe prediction step"):
                 ################################################################################
                 # TODO: Forward pass through your model
-                init_states = batch.states[:, 0:1].to(self.device)  # BS, 1, C, H, W
+                init_states = batch.states.to(self.device)  # BS, 1, C, H, W
                 actions = batch.actions.to(self.device)
                 
                 pred_encs = model(states=init_states, actions=batch.actions)
@@ -222,7 +222,7 @@ class ProbingEvaluator:
         for idx, batch in enumerate(tqdm(val_ds, desc="Eval probe pred")):
             ################################################################################
             # TODO: Forward pass through your model
-            init_states = batch.states[:, 0:1]  # BS, 1 C, H, W
+            init_states = batch.states  # BS, 1 C, H, W
             pred_encs = model(states=init_states, actions=batch.actions)
             # # BS, T, D --> T, BS, D
             pred_encs = pred_encs.transpose(0, 1)
