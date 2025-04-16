@@ -113,7 +113,6 @@ class JEPAAgent(nn.Module):
 
         # Encode first observation step-by-step with shape printing
         x = states[:, 0]  # [B, 2, 64, 64]
-        print(f"Input state[:, 0] shape: {x.shape}")
         print(f"Actual input size: {states[:, 0].shape}") 
         for i, layer in enumerate(self.encoder):
             x = layer(x)
