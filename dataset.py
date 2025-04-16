@@ -37,7 +37,7 @@ class WallDataset:
             locations = torch.from_numpy(self.locations[i]).float().to(self.device)
         else:
             locations = torch.empty(0).to(self.device)
-        print(f"[DEBUG] Using WallDataset with corrected crop: {states.shape}")
+        #print(f"[DEBUG] Using WallDataset with corrected crop: {states.shape}")
 
 
         return WallSample(states=states, locations=locations, actions=actions)
