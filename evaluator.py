@@ -108,13 +108,22 @@ class ProbingEvaluator:
             batch_size=batch_size,
         )
 
+        # The model is given only the initial observation (state at time t=0), denoted as s₀.
+        # It receives the full sequence of planned future actions [a₀, ..., a_{T-1}].
+        # The goal is to test whether the model's internal representations are informative enough 
+        # to predict the future positions [x₁, ..., x_T] solely based on this minimal input.
+
         for epoch in tqdm(range(epochs), desc=f"Probe prediction epochs"):
             for batch in tqdm(dataset, desc="Probe prediction step"):
                 ################################################################################
                 # TODO: Forward pass through your model
-                init_states = batch.states[:, 0:1]  # BS, 1, C, H, W
+                init_states = batch.states[:, 0:1].to(self.device)  # BS, 1, C, H, W
+                actions = batch.actions.to(self.device)
+                
                 pred_encs = model(states=init_states, actions=batch.actions)
                 pred_encs = pred_encs.transpose(0, 1)  # # BS, T, D --> T, BS, D
+
+                assert pred_encs.ndim == 3, f"Expected 3D tensor for pred_encs, got {pred_encs.shape}"
 
                 # Make sure pred_encs has shape (T, BS, D) at this point
                 ################################################################################
