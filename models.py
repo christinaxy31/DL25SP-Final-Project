@@ -30,6 +30,17 @@ class ResidualPredictor(nn.Module):
         return x[..., :self.output_dim] + self.net(x)  
 
 
+class ActionEncoder(nn.Module):
+    def __init__(self, input_dim=2, hidden_dim=32, output_dim=64):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim),
+        )
+
+    def forward(self, action):
+        return self.encoder(action)
 
 
 
@@ -111,14 +122,15 @@ class JEPAAgent(nn.Module):
             nn.Linear(64 * 8 * 8, repr_dim),    # [B, 4096] -> [B, 256]
         )
 
+        self.action_encoder = ActionEncoder(input_dim=2, hidden_dim=32, output_dim=action_emb_dim)
 
 
         
         # Predictor: (s_prev, action) -> s_next_pred
         # self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
         
-        self.predictor = ResidualPredictor(input_dim=repr_dim + 2, hidden_dim=512, output_dim=repr_dim)
-
+        #self.predictor = ResidualPredictor(input_dim=repr_dim + 2, hidden_dim=512, output_dim=repr_dim)
+        self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
 
     # JEPA rollout for T steps:
     # At t = 0: use encoder to get s_0 from o_0
@@ -155,7 +167,9 @@ class JEPAAgent(nn.Module):
 
         for t in range(T - 1):
             a_t = actions[:, t]  # [B, 2]
-            inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
+            a_embed = self.action_encoder(a_t)  # [B, action_emb_dim]
+            inp = torch.cat([s_prev, a_embed], dim=-1)  # [B, repr_dim + action_emb_dim]
+            # inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
             s_pred = self.predictor(inp)  # [B, repr_dim]
             reprs.append(s_pred)
             s_prev = s_pred
