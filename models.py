@@ -102,10 +102,11 @@ class Prober(torch.nn.Module):
 
 
 class JEPAAgent(nn.Module):
-    def __init__(self, repr_dim=256, device="cuda"):
+    def __init__(self, repr_dim=256, action_emb_dim=64, device="cuda"):
         super().__init__()
         self.device = device
         self.repr_dim = repr_dim
+        self.action_emb_dim = action_emb_dim
         
         # Encoder: 2-channel image -> representation
         self.encoder = nn.Sequential(
@@ -122,7 +123,7 @@ class JEPAAgent(nn.Module):
             nn.Linear(64 * 8 * 8, repr_dim),    # [B, 4096] -> [B, 256]
         )
 
-        self.action_encoder = ActionEncoder(input_dim=2, hidden_dim=32, output_dim=action_emb_dim)
+        self.action_encoder = ActionEncoder(input_dim=2, hidden_dim=32, output_dim=self.action_emb_dim)
 
 
         
