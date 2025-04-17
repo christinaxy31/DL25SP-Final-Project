@@ -79,15 +79,21 @@ class JEPAAgent(nn.Module):
         # Encoder: 2-channel image -> representation
         self.encoder = nn.Sequential(
             nn.Conv2d(2, 16, kernel_size=5, stride=2, padding=2),  # [B, 2, 64, 64] -> [B, 16, 32, 32]
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # [B, 16, 32, 32] -> [B, 32, 16, 16]
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),  # [B, 32, 16, 16] -> [B, 64, 8, 8] 
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Flatten(), # [B, 64, 8, 8] -> [B, 4096]
             nn.Linear(64 * 8 * 8, repr_dim),    # [B, 4096] -> [B, 256]
         )
 
+
+
+        
         # Predictor: (s_prev, action) -> s_next_pred
         self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
 
