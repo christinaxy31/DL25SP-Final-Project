@@ -30,6 +30,22 @@ class ResidualPredictor(nn.Module):
         return x[..., :self.output_dim] + self.net(x)  
 
 
+class GRUPredictor(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super().__init__()
+        self.gru = nn.GRU(input_dim, hidden_dim, batch_first=True)
+        self.linear = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x, h):
+        # x: [B, 1, input_dim]
+        # h: [1, B, hidden_dim] (GRU hidden state)
+        out, h_next = self.gru(x, h)              # out: [B, 1, hidden_dim]
+        pred = self.linear(out.squeeze(1))        # [B, output_dim]
+        return pred, h_next
+
+
+
+
 class ActionEncoder(nn.Module):
     def __init__(self, input_dim=2, hidden_dim=32, output_dim=64):
         super().__init__()
@@ -130,8 +146,8 @@ class JEPAAgent(nn.Module):
         # Predictor: (s_prev, action) -> s_next_pred
         # self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
         
-        #self.predictor = ResidualPredictor(input_dim=repr_dim + 2, hidden_dim=512, output_dim=repr_dim)
-        self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
+        self.predictor = ResidualPredictor(input_dim=repr_dim + 2, hidden_dim=512, output_dim=repr_dim)
+        #self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
 
     # JEPA rollout for T steps:
     # At t = 0: use encoder to get s_0 from o_0
