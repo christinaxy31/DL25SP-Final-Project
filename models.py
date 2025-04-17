@@ -26,7 +26,7 @@ class ResidualPredictor(nn.Module):
         )
 
     def forward(self, x):
-        return x[..., :output_dim] + self.net(x)  
+        return x[..., :self.output_dim] + self.net(x)  
 
 
 
