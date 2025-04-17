@@ -19,6 +19,7 @@ def build_mlp(layers_dims: List[int]):
 class ResidualPredictor(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super().__init__()
+        self.output_dim = output_dim
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
@@ -71,7 +72,7 @@ class Prober(torch.nn.Module):
         self.output_dim = np.prod(output_shape)
         self.output_shape = output_shape
         self.arch = arch
-        self.output_dim = output_dim
+        
 
         arch_list = list(map(int, arch.split("-"))) if arch != "" else []
         f = [embedding] + arch_list + [self.output_dim]
