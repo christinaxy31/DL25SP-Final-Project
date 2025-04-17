@@ -15,6 +15,24 @@ def build_mlp(layers_dims: List[int]):
     return nn.Sequential(*layers)
 
 
+
+class ResidualPredictor(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim),
+        )
+
+    def forward(self, x):
+        return x[..., :output_dim] + self.net(x)  
+
+
+
+
+
+
 class MockModel(torch.nn.Module):
     """
     Does nothing. Just for testing.
@@ -95,7 +113,10 @@ class JEPAAgent(nn.Module):
 
         
         # Predictor: (s_prev, action) -> s_next_pred
-        self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
+        # self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
+        
+        self.predictor = ResidualPredictor(input_dim=repr_dim + 2, hidden_dim=512, output_dim=repr_dim)
+
 
     # JEPA rollout for T steps:
     # At t = 0: use encoder to get s_0 from o_0
