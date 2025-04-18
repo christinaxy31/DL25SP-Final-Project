@@ -195,7 +195,8 @@ class JEPAAgent(nn.Module):
             a_embed = self.action_encoder(a_t)  # [B, action_emb_dim]
             inp = torch.cat([s_prev, a_embed], dim=-1)  # [B, repr_dim + action_emb_dim]
             #inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
-            s_pred = self.predictor(inp)  # [B, repr_dim]
+            #s_pred = self.predictor(inp)  # [B, repr_dim]
+            s_pred, h = self.predictor(inp, h) 
             reprs.append(s_pred)
             s_prev = s_pred
 
