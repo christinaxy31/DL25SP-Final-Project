@@ -174,7 +174,19 @@ class ProbingEvaluator:
                 losses_list.append(per_probe_loss)
                 optimizer_pred_prober.zero_grad()
                 loss = sum(losses_list)
+
+                # Add VICReg-style regularization
+                flat_repr = pred_encs.permute(1, 0, 2).reshape(-1, pred_encs.shape[-1])  # [BS*T, D]
+                std = torch.std(flat_repr, dim=0).mean()
+                loss_reg = F.relu(1.0 - std)
+                
+                lam = 0.1  # 可调
+                loss += lam * loss_reg
+                
                 loss.backward()
+
+                
+                #loss.backward()
                 optimizer_pred_prober.step()
 
                 lr = scheduler.adjust_learning_rate(step)
