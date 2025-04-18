@@ -44,6 +44,19 @@ class GRUPredictor(nn.Module):
         return pred, h_next
 
 
+class LSTMPredictor(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super().__init__()
+        self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True)
+        self.linear = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x, h_c):
+        # x: [B, 1, input_dim]
+        # h_c: (h, c), each of shape [1, B, hidden_dim]
+        out, (h_next, c_next) = self.lstm(x, h_c)     # out: [B, 1, hidden_dim]
+        pred = self.linear(out.squeeze(1))            # pred: [B, output_dim]
+        return pred, (h_next, c_next)
+
 
 
 class ActionEncoder(nn.Module):
@@ -149,10 +162,17 @@ class JEPAAgent(nn.Module):
         #self.predictor = ResidualPredictor(input_dim=self.repr_dim + 2, hidden_dim=512, output_dim=self.repr_dim)
         #self.predictor = ResidualPredictor(input_dim=self.repr_dim + self.action_emb_dim, hidden_dim=512, output_dim=self.repr_dim)
         #self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
+        '''
         self.predictor = GRUPredictor(
             input_dim=self.repr_dim + self.action_emb_dim,
             hidden_dim=256,
             output_dim=self.repr_dim
+        )
+        '''
+        self.predictor = LSTMPredictor(
+        input_dim=self.repr_dim + self.action_emb_dim,
+        hidden_dim=hidden_dim,
+        output_dim=self.repr_dim
         )
 
 
@@ -192,6 +212,7 @@ class JEPAAgent(nn.Module):
         #reprs.append(s_prev)
 
         h = torch.zeros(1, B, self.hidden_dim).to(states.device) 
+        c = torch.zeros(1, B, self.hidden_dim, device=states.device)
         for t in range(T - 1):
             a_t = actions[:, t]  # [B, 2]
             a_embed = self.action_encoder(a_t)  # [B, action_emb_dim]
@@ -199,7 +220,8 @@ class JEPAAgent(nn.Module):
             inp = inp.unsqueeze(1)  #for GRU
             #inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
             #s_pred = self.predictor(inp)  # [B, repr_dim]
-            s_pred, h = self.predictor(inp, h) 
+            #s_pred, h = self.predictor(inp, h) # for GRU
+            s_pred, (h, c) = self.predictor(inp, (h, c))    # for LSTM 
             reprs.append(s_pred)
             s_prev = s_pred
 
