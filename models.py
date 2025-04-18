@@ -146,8 +146,8 @@ class JEPAAgent(nn.Module):
         # Predictor: (s_prev, action) -> s_next_pred
         # self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
         
-        self.predictor = ResidualPredictor(input_dim=self.repr_dim + self.action_emb_dim, hidden_dim=512, output_dim=self.repr_dim)
-        #self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
+        #self.predictor = ResidualPredictor(input_dim=self.repr_dim + self.action_emb_dim, hidden_dim=512, output_dim=self.repr_dim)
+        self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
 
     # JEPA rollout for T steps:
     # At t = 0: use encoder to get s_0 from o_0
