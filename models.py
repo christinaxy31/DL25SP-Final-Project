@@ -190,6 +190,7 @@ class JEPAAgent(nn.Module):
         #s_prev = self.encoder(states[:, 0])  # [B, 2, 64, 64] -> [B, repr_dim]
         #reprs.append(s_prev)
 
+        h = torch.zeros(1, B, self.hidden_dim).to(states.device) 
         for t in range(T - 1):
             a_t = actions[:, t]  # [B, 2]
             a_embed = self.action_encoder(a_t)  # [B, action_emb_dim]
