@@ -171,7 +171,7 @@ class JEPAAgent(nn.Module):
         '''
         self.predictor = LSTMPredictor(
         input_dim=self.repr_dim + self.action_emb_dim,
-        hidden_dim=hidden_dim,
+        hidden_dim=self.hidden_dim,
         output_dim=self.repr_dim
         )
 
