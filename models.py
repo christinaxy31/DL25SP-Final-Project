@@ -149,9 +149,9 @@ class JEPAAgent(nn.Module):
         #self.predictor = ResidualPredictor(input_dim=self.repr_dim + self.action_emb_dim, hidden_dim=512, output_dim=self.repr_dim)
         #self.predictor = build_mlp([repr_dim + action_emb_dim, 512, repr_dim])
         self.predictor = GRUPredictor(
-            input_dim=repr_dim + action_emb_dim,
-            hidden_dim=hidden_dim,
-            output_dim=repr_dim
+            input_dim=self.repr_dim + self.action_emb_dim,
+            hidden_dim=256,
+            output_dim=self.repr_dim
         )
 
 
