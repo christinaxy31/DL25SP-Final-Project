@@ -123,6 +123,7 @@ class JEPAAgent(nn.Module):
         self.device = device
         self.repr_dim = repr_dim
         self.action_emb_dim = action_emb_dim
+        self.hidden_dim = 256 #for GRU
         
         # Encoder: 2-channel image -> representation
         self.encoder = nn.Sequential(
