@@ -43,91 +43,15 @@ def load_data(device):
 
     return probe_train_ds, probe_val_ds
 
-'''
+
 def load_model():
     """Load or initialize the model."""
     # TODO: Replace MockModel with your trained model
     #model = MockModel()
     model = JEPAAgent(repr_dim=256,action_emb_dim=64)
     return model
-'''
+
     
-def load_model(device):
-    """
-    • If jepa.ckpt exists → load and return the model.
-    • Else  → run a short self-supervised JEPA training loop,
-              save jepa.ckpt, then return the trained model.
-    All helper code lives *inside* this function, so the rest of
-    main.py (load_data, evaluate_model, __main__) is unchanged.
-    """
-    import os, math, torch
-    from tqdm.auto import tqdm
-    from models import JEPAModel
-    from dataset import create_wall_dataloader
-
-    CKPT_FILE   = "jepa_spatial.ckpt"
-    TRAIN_STEPS = 20_000
-    LR          = 3e-4
-    PRINT_EVERY = 1000
-
-    # ---------------------------------------------------------------
-    def cosine_tau(step, total, base=0.996, final=0.9995):
-        p = step / total
-        return final - (final - base) * 0.5 * (1 + math.cos(math.pi * p))
-
-    # build tiny model
-    model = JEPAModel(
-        repr_dim=256,action_emb_dim=64
-    )
-
-    # if checkpoint exists – just load it
-    if os.path.exists(CKPT_FILE):
-        model.load_state_dict(torch.load(CKPT_FILE, map_location=device))
-        print("✓ loaded pretrained weights")
-        return model
-
-    # ---------------------------------------------------------------
-    #                self-supervised pre-training
-    # ---------------------------------------------------------------
-    print("⏳  checkpoint not found – training JEPA …")
-
-    train_loader = create_wall_dataloader(
-        "/scratch/DL25SP/train",
-        probing=False, device=device, train=True,
-    )
-    iterator = iter(train_loader)
-    opt      = torch.optim.Adam(model.parameters(), LR)
-
-    model.train()
-    for step in tqdm(range(TRAIN_STEPS), desc="JEPA pre-train"):
-        try:
-            batch = next(iterator)
-        except StopIteration:
-            iterator = iter(train_loader)
-            batch    = next(iterator)
-
-        s = batch.states.to(device)
-        a = batch.actions.to(device)
-
-        online_fm = model._teacher_force(s, a, return_maps=True)     # (B,T,C,64,64)
-        tgt_fm    = model.target_encoder(s.flatten(0,1)).view_as(online_fm).detach()
-        loss      = model.jepa_loss(online_fm, tgt_fm)
-
-        opt.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
-        opt.step()
-        model.update_target(cosine_tau(step, TRAIN_STEPS))
-
-        if step % PRINT_EVERY == 0:
-            print(f"[step {step:>5}] VicReg loss = {loss.item():.4f}", flush=True)
-
-    torch.save(model.state_dict(), CKPT_FILE)
-    print(f"✅  saved checkpoint to {CKPT_FILE}")
-    model.eval()
-    return model
-
-
 
 
 def evaluate_model(device, model, probe_train_ds, probe_val_ds):
