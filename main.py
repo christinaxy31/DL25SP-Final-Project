@@ -100,8 +100,27 @@ def train_jepa(model, dataloader, device, num_epochs=50, lr=2e-4, alpha=1.0):
             feat_map, pred_map = model.forward_spatial(states[:, 0])  # [B, 64, 8, 8]
             spatial_loss = F.mse_loss(pred_map, feat_map.detach())
 
+            # === aux loss ===
+            # Representation from encoder (first observation)
+            first_obs = states[:, 0]  # [B, 2, 64, 64]
+            feat_map = model.encoder_backbone(first_obs)
+            s_0 = model.encoder_projector(feat_map)  # [B, D]
+            
+            # Predict position from s_0
+            pred_location = model.aux_position_head(s_0)  # [B, 2]
+            
+            # Ground truth location at time 0
+            gt_location = batch.locations[:, 0].to(device)  # [B, 2]
+            gt_location = model.normalizer.normalize_location(gt_location)
+            
+            # Auxiliary position loss
+            aux_loss = F.mse_loss(pred_location, gt_location)
+
+
             # === Total loss ===
-            loss = global_loss + alpha * spatial_loss
+            #loss = global_loss + alpha * spatial_loss
+            loss = global_loss + alpha * spatial_loss + beta * aux_loss
+
 
             optimizer.zero_grad()
             loss.backward()
