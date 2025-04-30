@@ -58,16 +58,19 @@ def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4):
         num_batches = 0
 
         for batch in dataloader:
-            batch = batch.to(device)
-            context = batch[:, :-1]  # e.g., [B, T-1, D]
-            target = batch[:, -1]    # last step
-
-            pred = model(context)    # predict representation of target
-            loss = F.mse_loss(pred, target)
-
+            states = batch.states.to(device)    # [B, T, 2, 64, 64]
+            actions = batch.actions.to(device)  # [B, T-1, 2]
+        
+            context = states[:, :-1]
+            target = states[:, -1]
+        
+            pred = model(context, actions)      # predict full trajectory reprs
+            loss = F.mse_loss(pred[:, -1], target)  # compare final step reprs
+        
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
 
             total_loss += loss.item()
             num_batches += 1
