@@ -180,7 +180,7 @@ class ProbingEvaluator:
                 std = torch.std(flat_repr, dim=0).mean()
                 loss_reg = F.relu(1.0 - std)
                 
-                lam = 0.1  # 可调
+                lam = 0.1  
                 loss += lam * loss_reg
                 
                 loss.backward()
