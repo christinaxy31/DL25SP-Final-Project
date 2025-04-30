@@ -46,44 +46,60 @@ def load_data(device):
     return probe_train_ds, probe_val_ds
 
 
-def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4):
-    """Train JEPA model on exploratory agent data."""
+def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4, alpha=1.0):
+    """
+    Train JEPA model with both global rollout loss and spatial predictor loss.
+    Args:
+        model: JEPAAgent
+        dataloader: training dataloader
+        device: torch.device
+        num_epochs: number of training epochs
+        lr: learning rate
+        alpha: weight for spatial loss
+    """
     model.train()
     model = model.to(device)
-
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
     for epoch in range(num_epochs):
-        total_loss = 0.0
+        total_global_loss = 0.0
+        total_spatial_loss = 0.0
         num_batches = 0
 
         for batch in dataloader:
             states = batch.states.to(device)    # [B, T, 2, 64, 64]
             actions = batch.actions.to(device)  # [B, T-1, 2]
-        
-            # Forward through JEPA
-            pred = model(states, actions)       # [B, T, repr_dim]
-        
-            # Encode the target state (last step of observation)
-            target_state = states[:, -1]        # [B, 2, 64, 64]
-            target_repr = model.encoder(target_state)  # [B, repr_dim]
-        
-            loss = F.mse_loss(pred[:, -1], target_repr)
-        
+
+            # === Global loss ===
+            preds = model(states, actions)                     # [B, T, D]
+            target_repr = model.projector(                    # [B, D]
+                model.encoder_backbone(states[:, -1])
+            )
+            global_loss = F.mse_loss(preds[:, -1], target_repr)
+
+            # === Spatial loss ===
+            feat_map, pred_map = model.forward_spatial(states[:, 0])  # [B, 64, 8, 8]
+            spatial_loss = F.mse_loss(pred_map, feat_map.detach())
+
+            # === Total loss ===
+            loss = global_loss + alpha * spatial_loss
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-
-            total_loss += loss.item()
+            total_global_loss += global_loss.item()
+            total_spatial_loss += spatial_loss.item()
             num_batches += 1
 
-        avg_loss = total_loss / num_batches
-        print(f"[JEPA Training] Epoch {epoch + 1}: avg_loss = {avg_loss:.6f}")
+        avg_global_loss = total_global_loss / num_batches
+        avg_spatial_loss = total_spatial_loss / num_batches
+        print(f"[Epoch {epoch+1}] Global Loss: {avg_global_loss:.6f}, Spatial Loss: {avg_spatial_loss:.6f}")
 
     os.makedirs("results", exist_ok=True)
     torch.save(model.state_dict(), "results/jepa_model.pt")
     print("JEPA model saved to results/jepa_model.pt")
+
 
 
 def load_model():
