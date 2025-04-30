@@ -61,11 +61,14 @@ def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4):
             states = batch.states.to(device)    # [B, T, 2, 64, 64]
             actions = batch.actions.to(device)  # [B, T-1, 2]
         
-            context = states[:, :-1]
-            target = states[:, -1]
+            # Forward through JEPA
+            pred = model(states, actions)       # [B, T, repr_dim]
         
-            pred = model(context, actions)      # predict full trajectory reprs
-            loss = F.mse_loss(pred[:, -1], target)  # compare final step reprs
+            # Encode the target state (last step of observation)
+            target_state = states[:, -1]        # [B, 2, 64, 64]
+            target_repr = model.encoder(target_state)  # [B, repr_dim]
+        
+            loss = F.mse_loss(pred[:, -1], target_repr)
         
             optimizer.zero_grad()
             loss.backward()
