@@ -129,7 +129,6 @@ class Prober(torch.nn.Module):
 
 
 
-
 class JEPAAgent(nn.Module):
     def __init__(self, repr_dim=256, action_emb_dim=64, device="cuda"):
         super().__init__()
@@ -137,9 +136,9 @@ class JEPAAgent(nn.Module):
         self.repr_dim = repr_dim
         self.action_emb_dim = action_emb_dim
         self.hidden_dim = 256 #for GRU
-        
+
         # Encoder: 2-channel image -> representation
-        self.encoder = nn.Sequential(
+        self.encoder_backbone = nn.Sequential(
             nn.Conv2d(2, 16, kernel_size=5, stride=2, padding=2),  # [B, 2, 64, 64] -> [B, 16, 32, 32]
             nn.BatchNorm2d(16),
             nn.ReLU(),
@@ -148,15 +147,23 @@ class JEPAAgent(nn.Module):
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),  # [B, 32, 16, 16] -> [B, 64, 8, 8] 
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            nn.ReLU()
+        )
+
+        self.encoder_projector = nn.Sequential(
             nn.Flatten(), # [B, 64, 8, 8] -> [B, 4096]
             nn.Linear(64 * 8 * 8, repr_dim),    # [B, 4096] -> [B, 256]
         )
 
         self.action_encoder = ActionEncoder(input_dim=2, hidden_dim=32, output_dim=self.action_emb_dim)
 
+        # Spatial predictor
+        self.spatial_predictor = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=1)
+        )
 
-        
         # Predictor: (s_prev, action) -> s_next_pred
         #self.predictor = build_mlp([repr_dim + 2, 512, repr_dim])
         #self.predictor = ResidualPredictor(input_dim=self.repr_dim + 2, hidden_dim=512, output_dim=self.repr_dim)
@@ -170,20 +177,15 @@ class JEPAAgent(nn.Module):
         )
         '''
         self.predictor = LSTMPredictor(
-        input_dim=self.repr_dim + self.action_emb_dim,
-        hidden_dim=self.hidden_dim,
-        output_dim=self.repr_dim
+            input_dim=self.repr_dim + self.action_emb_dim,
+            hidden_dim=self.hidden_dim,
+            output_dim=self.repr_dim
         )
-        
-
-    
 
     # JEPA rollout for T steps:
     # At t = 0: use encoder to get s_0 from o_0
     # At t = 1 to T-1: use predictor(s_{t-1}, u_{t-1}) to get s̃_t
     # Output: a sequence of T representations [s_0, s̃_1, ..., s̃_{T-1}]
-
-
     def forward(self, states, actions): 
         # actions: [B, T-1, 2] 
         # states: [num_trajectories, trajectory_length, 2, 64, 64] ([B, T, 2, 64, 64])
@@ -193,23 +195,18 @@ class JEPAAgent(nn.Module):
         actions: [B, T-1, 2]
         returns: [B, T, D]
         """
-    
         B, T, _, H, W = states.shape
         reprs = []
-
 
         # Encode first observation step-by-step with shape printing
         x = states[:, 0]  # [B, 2, 64, 64]
         print(f"Actual input size: {states[:, 0].shape}") 
-        for i, layer in enumerate(self.encoder):
-            x = layer(x)
-            #print(f"After encoder layer {i} ({layer.__class__.__name__}): {x.shape}")
-        s_prev = x
+        feat = self.encoder_backbone(x)            # [B, 64, 8, 8]
+        for i, layer in enumerate(self.encoder_projector):
+            feat = layer(feat)
+            #print(f"After encoder layer {i} ({layer.__class__.__name__}): {feat.shape}")
+        s_prev = feat
         reprs.append(s_prev)
-        # Encode first observation
-        
-        #s_prev = self.encoder(states[:, 0])  # [B, 2, 64, 64] -> [B, repr_dim]
-        #reprs.append(s_prev)
 
         h = torch.zeros(1, B, self.hidden_dim).to(states.device) 
         c = torch.zeros(1, B, self.hidden_dim, device=states.device)
@@ -220,13 +217,24 @@ class JEPAAgent(nn.Module):
             inp = inp.unsqueeze(1)  #for GRU
             #inp = torch.cat([s_prev, a_t], dim=-1)  # [B, repr_dim+2]
             #s_pred = self.predictor(inp)  # [B, repr_dim]
-            s_pred, h = self.predictor(inp, h) # for GRU
-            #s_pred, (h, c) = self.predictor(inp, (h, c))    # for LSTM 
+            #s_pred, h = self.predictor(inp, h) # for GRU
+            s_pred, (h, c) = self.predictor(inp, (h, c))    # for LSTM 
             reprs.append(s_pred)
             s_prev = s_pred
 
         return torch.stack(reprs, dim=1)  # [B, T, repr_dim]
 
-
+    def forward_spatial(self, states):
+        """
+        Predict spatial feature map from encoder features.
+        Args:
+            states: [B, 2, 64, 64]
+        Returns:
+            feat_map: [B, 64, 8, 8] - encoder output
+            pred_map: [B, 64, 8, 8] - predicted feature map
+        """
+        feat_map = self.encoder_backbone(states)         # [B, 64, 8, 8]
+        pred_map = self.spatial_predictor(feat_map)      # [B, 64, 8, 8]
+        return feat_map, pred_map
 
   
