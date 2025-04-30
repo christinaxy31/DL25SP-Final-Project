@@ -1,8 +1,9 @@
+import torch
+import os
 from dataset import create_wall_dataloader
 from evaluator import ProbingEvaluator
-import torch
-from models import MockModel, JEPAAgent
-import glob
+from models import JEPAAgent
+import torch.nn.functional as F
 
 
 def get_device():
@@ -13,6 +14,7 @@ def get_device():
 
 
 def load_data(device):
+    """Load training and validation dataloaders for probing."""
     data_path = "/scratch/DL25SP"
 
     probe_train_ds = create_wall_dataloader(
@@ -44,17 +46,48 @@ def load_data(device):
     return probe_train_ds, probe_val_ds
 
 
-def load_model():
-    """Load or initialize the model."""
-    # TODO: Replace MockModel with your trained model
-    #model = MockModel()
-    model = JEPAAgent(repr_dim=256,action_emb_dim=64)
-    return model
+def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4):
+    """Train JEPA model on exploratory agent data."""
+    model.train()
+    model = model.to(device)
 
-    
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+
+    for epoch in range(num_epochs):
+        total_loss = 0.0
+        num_batches = 0
+
+        for batch in dataloader:
+            batch = batch.to(device)
+            context = batch[:, :-1]  # e.g., [B, T-1, D]
+            target = batch[:, -1]    # last step
+
+            pred = model(context)    # predict representation of target
+            loss = F.mse_loss(pred, target)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+            num_batches += 1
+
+        avg_loss = total_loss / num_batches
+        print(f"[JEPA Training] Epoch {epoch + 1}: avg_loss = {avg_loss:.6f}")
+
+    os.makedirs("results", exist_ok=True)
+    torch.save(model.state_dict(), "results/jepa_model.pt")
+    print("JEPA model saved to results/jepa_model.pt")
+
+
+def load_model():
+    """Initialize JEPA model. You can load checkpoint here if needed."""
+    model = JEPAAgent(repr_dim=256, action_emb_dim=64)
+    return model
 
 
 def evaluate_model(device, model, probe_train_ds, probe_val_ds):
+    """Train a probing head and evaluate it on JEPA representations."""
     evaluator = ProbingEvaluator(
         device=device,
         model=model,
@@ -64,20 +97,26 @@ def evaluate_model(device, model, probe_train_ds, probe_val_ds):
     )
 
     prober = evaluator.train_pred_prober()
-
     avg_losses = evaluator.evaluate_all(prober=prober)
 
     for probe_attr, loss in avg_losses.items():
-        print(f"{probe_attr} loss: {loss}")
+        print(f"{probe_attr} loss: {loss:.6f}")
 
 
 if __name__ == "__main__":
     device = get_device()
     model = load_model()
     model = model.to(device)
-    
+
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Total Trainable Parameters: {total_params:,}")
 
     probe_train_ds, probe_val_ds = load_data(device)
+
+    # === Train JEPA agent ===
+    print("Starting JEPA training...")
+    train_jepa(model, probe_train_ds, device)
+
+    # === Evaluate by training a probing head ===
+    print("Starting Probing Evaluation...")
     evaluate_model(device, model, probe_train_ds, probe_val_ds)
