@@ -4,6 +4,8 @@ from dataset import create_wall_dataloader
 from evaluator import ProbingEvaluator
 from models import JEPAAgent
 import torch.nn.functional as F
+from normalizer import Normalizer
+normalizer = Normalizer()
 
 
 def get_device():
@@ -111,7 +113,8 @@ def train_jepa(model, dataloader, device, num_epochs=50, lr=2e-4, alpha=1.0):
             
             # Ground truth location at time 0
             gt_location = batch.locations[:, 0].to(device)  # [B, 2]
-            gt_location = model.normalizer.normalize_location(gt_location)
+            gt_location = normalizer.normalize_location(gt_location)
+
             
             # Auxiliary position loss
             aux_loss = F.mse_loss(pred_location, gt_location)
