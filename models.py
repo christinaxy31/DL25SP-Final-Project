@@ -200,7 +200,7 @@ class JEPAAgent(nn.Module):
 
         # Encode first observation step-by-step with shape printing
         x = states[:, 0]  # [B, 2, 64, 64]
-        print(f"Actual input size: {states[:, 0].shape}") 
+        #print(f"Actual input size: {states[:, 0].shape}") 
         feat = self.encoder_backbone(x)            # [B, 64, 8, 8]
         for i, layer in enumerate(self.encoder_projector):
             feat = layer(feat)
