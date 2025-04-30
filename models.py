@@ -203,7 +203,7 @@ class JEPAAgent(nn.Module):
         print(f"Actual input size: {states[:, 0].shape}") 
         for i, layer in enumerate(self.encoder):
             x = layer(x)
-            print(f"After encoder layer {i} ({layer.__class__.__name__}): {x.shape}")
+            #print(f"After encoder layer {i} ({layer.__class__.__name__}): {x.shape}")
         s_prev = x
         reprs.append(s_prev)
         # Encode first observation
