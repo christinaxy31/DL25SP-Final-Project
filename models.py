@@ -121,11 +121,10 @@ class Prober(torch.nn.Module):
         layers = []
         for i in range(len(f) - 2):
             layers.append(torch.nn.Linear(f[i], f[i + 1]))
-            layers.append(torch.nn.BatchNorm1d(f[i + 1]))
             layers.append(torch.nn.ReLU(True))
-            layers.append(torch.nn.Dropout(p=0.2))  # Optional: Dropout for regularization
         layers.append(torch.nn.Linear(f[-2], f[-1]))
         self.prober = torch.nn.Sequential(*layers)
+
 
 
     def forward(self, e):
