@@ -46,7 +46,7 @@ def load_data(device):
     return probe_train_ds, probe_val_ds
 
 
-def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4, alpha=1.0):
+def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0):
     """
     Train JEPA model with both global rollout loss and spatial predictor loss.
     Args:
