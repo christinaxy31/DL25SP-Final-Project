@@ -71,19 +71,29 @@ def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4, alpha=1.0):
             actions = batch.actions.to(device)  # [B, T-1, 2]
 
             # === Global loss ===
-            preds = model(states, actions)                     # [B, T, D]
-            '''
-            target_repr = model.encoder_projector(
-                model.encoder_backbone(states[:, -1])
-            )
+            # Predicted representations
+            preds = model(states, actions)   # [B, T, D]
+            
+            # Extract raw observations o_1 to o_T (skip o_0) for target encoding
+            # shape: [B, T-1, C, H, W]
+            B, T, C, H, W = states.shape
+            obs_target = states[:, 1:]  # [B, T-1, 2, 64, 64]
+            
+            # Flatten batch and time for encoding
+            obs_target_flat = obs_target.reshape(-1, C, H, W)  # [B*(T-1), 2, 64, 64]
+            
+            # Encode target states: s'_n = encoder(o_n)
+            with torch.no_grad():  # optionally freeze target encoder if needed
+                encoded = model.encoder_projector(model.encoder_backbone(obs_target_flat))  # [B*(T-1), D]
+            
+            target_repr_all = encoded.view(B, T-1, -1)  # [B, T-1, D]
+            
+            # Predicted states: s̃_n
+            pred_repr_all = preds[:, 1:]  # [B, T-1, D]
+            
+            # Compute energy loss
+            global_loss = F.mse_loss(pred_repr_all, target_repr_all)
 
-            global_loss = F.mse_loss(preds[:, -1], target_repr)
-            '''
-
-            target_repr_all = model.encoder_projector(
-            model.encoder_backbone(states[:, 1:])  # [B, T-1, ...]
-            )  # [B, T-1, D]
-            global_loss = F.mse_loss(preds[:, 1:], target_repr_all)
 
 
             # === Spatial loss ===
