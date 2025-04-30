@@ -72,12 +72,19 @@ def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4, alpha=1.0):
 
             # === Global loss ===
             preds = model(states, actions)                     # [B, T, D]
-            
+            '''
             target_repr = model.encoder_projector(
                 model.encoder_backbone(states[:, -1])
             )
 
             global_loss = F.mse_loss(preds[:, -1], target_repr)
+            '''
+
+            target_repr_all = model.encoder_projector(
+            model.encoder_backbone(states[:, 1:])  # [B, T-1, ...]
+            )  # [B, T-1, D]
+            global_loss = F.mse_loss(preds[:, 1:], target_repr_all)
+
 
             # === Spatial loss ===
             feat_map, pred_map = model.forward_spatial(states[:, 0])  # [B, 64, 8, 8]
