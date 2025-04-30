@@ -92,7 +92,12 @@ def train_jepa(model, dataloader, device, num_epochs=20, lr=2e-4, alpha=1.0):
 
             total_global_loss += global_loss.item()
             total_spatial_loss += spatial_loss.item()
+            if num_batches < 5:
+                print(f"Epoch {epoch+1}, Batch {num_batches+1}: Global Loss = {global_loss.item():.4f}, Spatial Loss = {spatial_loss.item():.4f}")
+
             num_batches += 1
+            
+
 
         avg_global_loss = total_global_loss / num_batches
         avg_spatial_loss = total_spatial_loss / num_batches
