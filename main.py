@@ -176,8 +176,8 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
         print(f"[Epoch {epoch+1}] Global Loss: {avg_global_loss:.6f}, Spatial Loss: {avg_spatial_loss:.6f}")
 
     os.makedirs("results", exist_ok=True)
-    torch.save(model.state_dict(), "results/jepa_model.pt")
-    print("JEPA model saved to results/jepa_model.pt")
+    torch.save(model.state_dict(), "results/model_weights.pth")
+    print("JEPA model saved to results/model_weights.pth")
 
 
 
