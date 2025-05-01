@@ -140,12 +140,14 @@ class JEPAAgent(nn.Module):
         self.repr_dim = repr_dim
         self.action_emb_dim = action_emb_dim
         self.hidden_dim = 256 #for GRU
-        #self.aux_position_head = nn.Linear(self.repr_dim, 2)
+        self.aux_position_head = nn.Linear(self.repr_dim, 2)
+        '''
         self.aux_position_head = nn.Sequential(
             nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, 2)
         )
+        '''
 
 
 
