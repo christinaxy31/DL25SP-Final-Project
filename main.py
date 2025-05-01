@@ -116,11 +116,11 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
 
             # === Spatial loss ===
             
-            #feat_map, pred_map = model.forward_spatial(states[:, 0])  # [B, 64, 8, 8]
-            #spatial_loss = F.mse_loss(pred_map, feat_map.detach())
-            feat_map = model.encoder_backbone(states[:, 0]).detach()  # ← add detach
-            pred_map = model.spatial_predictor(feat_map)
-            spatial_loss = F.mse_loss(pred_map, feat_map)
+            feat_map, pred_map = model.forward_spatial(states[:, 0])  # [B, 64, 8, 8]
+            spatial_loss = F.mse_loss(pred_map, feat_map.detach())
+            #feat_map = model.encoder_backbone(states[:, 0]).detach()  # ← add detach
+            #pred_map = model.spatial_predictor(feat_map)
+            #spatial_loss = F.mse_loss(pred_map, feat_map)
 
 
             # === aux loss ===
