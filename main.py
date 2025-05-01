@@ -122,7 +122,7 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
             pred_map = model.spatial_predictor(feat_map)
             spatial_loss = F.mse_loss(pred_map, feat_map)
 
-
+            '''
             # === aux loss ===
             # Representation from encoder (first observation)
             first_obs = states[:, 0]  # [B, 2, 64, 64]
@@ -139,6 +139,18 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
             
             # Auxiliary position loss
             aux_loss = F.mse_loss(pred_location, gt_location)
+            '''
+
+            # === aux loss over all time steps ===
+            aux_loss = 0
+            for t in range(T):
+                obs_t = states[:, t]  # [B, 2, 64, 64]
+                s_t = model.encoder_projector(model.encoder_backbone(obs_t))  # [B, D]
+                pred_loc = model.aux_position_head(s_t)  # [B, 2]
+                gt_loc = normalizer.normalize_location(batch.locations[:, t].to(device))  # [B, 2]
+                aux_loss += F.mse_loss(pred_loc, gt_loc)
+            aux_loss = aux_loss / T  # average over time steps
+
 
 
             # === Total loss ===
