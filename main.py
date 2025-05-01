@@ -20,7 +20,7 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 # Call at very beginning of main.py
-set_seed(42)
+set_seed(777)
 normalizer = Normalizer()
 
 
