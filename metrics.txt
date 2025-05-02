@@ -6,3 +6,7 @@ probe_wall val loss: 12.359893
 1,774,482
 # training command to replicate your submitted model
 python main.py
+
+
+# Requires Python >= 3.0
+# torch==2.5.1 and torchvision==0.20.1
