@@ -270,6 +270,4 @@ if __name__ == "__main__":
     #print("Starting JEPA training...")
     #train_jepa(model, probe_train_ds, device)
 
-    # === Evaluate by training a probing head ===
-    print("Starting Probing Evaluation...")
-    evaluate_model(device, model, probe_train_ds, probe_val_ds)
+    
