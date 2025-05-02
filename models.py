@@ -151,7 +151,7 @@ class JEPAAgent(nn.Module):
 
 
 
-        # Encoder: 2-channel image -> representation
+        # Encoder: 2-channel image to representation
         self.encoder_backbone = nn.Sequential(
             nn.Conv2d(2, 16, kernel_size=5, stride=2, padding=2),  # [B, 2, 64, 64] -> [B, 16, 32, 32]
             nn.BatchNorm2d(16),
