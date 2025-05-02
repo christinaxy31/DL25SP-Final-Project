@@ -2,3 +2,10 @@ matplotlib==3.4.2
 numpy==1.23.5
 omegaconf==2.1.2
 tqdm==4.65.0
+antlr4-python3-runtime==4.8
+cycler==0.12.1
+kiwisolver==1.4.7
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+requests==2.32.3
+pyyaml==6.0.2
