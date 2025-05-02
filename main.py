@@ -183,7 +183,7 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
 
 def load_model():
     """Initialize JEPA model. You can load checkpoint here if needed."""
-    model = JEPAAgent(repr_dim=256, action_emb_dim=64)
+    model = JEPAAgent(repr_dim=512, action_emb_dim=64)
     return model
 
 
