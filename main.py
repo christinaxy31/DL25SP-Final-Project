@@ -234,8 +234,8 @@ if __name__ == "__main__":
     probe_train_ds, probe_val_ds = load_data(device)
 
     # === Train JEPA agent ===
-    print("Starting JEPA training...")
-    train_jepa(model, probe_train_ds, device)
+    #print("Starting JEPA training...")
+    #train_jepa(model, probe_train_ds, device)
 
     # === Evaluate by training a probing head ===
     print("Starting Probing Evaluation...")
