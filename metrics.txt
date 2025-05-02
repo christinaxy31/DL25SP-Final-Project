@@ -1,6 +1,6 @@
 probe_normal val loss: 11.313787
 probe_wall val loss: 12.359893
-{hidden_eval_1} val loss: {your loss}
+wall_other val loss: 17.234350
 {hidden_eval_2} val loss: {your loss}
 # number of trainable parameters of your model
 1,774,482
