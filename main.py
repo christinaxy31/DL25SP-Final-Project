@@ -180,10 +180,23 @@ def train_jepa(model, dataloader, device, num_epochs=100, lr=2e-4, alpha=1.0, be
     print("JEPA model saved to results/model_weights.pth")
 
 
-
+'''
 def load_model():
     """Initialize JEPA model. You can load checkpoint here if needed."""
     model = JEPAAgent(repr_dim=256, action_emb_dim=64)
+    return model
+'''
+
+def load_model(checkpoint_path=None):
+    """Initialize JEPA model. If checkpoint_path is provided, load weights."""
+    model = JEPAAgent(repr_dim=256, action_emb_dim=64)
+    
+    if checkpoint_path is not None and os.path.exists(checkpoint_path):
+        print(f"Loading model weights from {checkpoint_path}...")
+        model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"))
+    else:
+        print("No checkpoint provided or file not found, initializing from scratch.")
+
     return model
 
 
@@ -206,9 +219,12 @@ def evaluate_model(device, model, probe_train_ds, probe_val_ds):
         print(f"{probe_attr} loss: {loss:.6f}")
 
 
+
 if __name__ == "__main__":
     device = get_device()
-    model = load_model()
+    #model = load_model()
+    checkpoint_path = "results/model_weights.pth" 
+    model = load_model(checkpoint_path)
     model = model.to(device)
 
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
