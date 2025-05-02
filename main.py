@@ -187,6 +187,8 @@ def load_model():
     return model
 
 
+
+
 def evaluate_model(device, model, probe_train_ds, probe_val_ds):
     """Train a probing head and evaluate it on JEPA representations."""
     evaluator = ProbingEvaluator(
