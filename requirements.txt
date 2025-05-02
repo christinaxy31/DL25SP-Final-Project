@@ -9,3 +9,7 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 requests==2.32.3
 pyyaml==6.0.2
+
+
+# Requires Python >= 3.0
+# torch==2.5.1 and torchvision==0.20.1
