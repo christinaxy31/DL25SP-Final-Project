@@ -33,6 +33,7 @@ def get_device():
 
 def load_data(device):
     """Load training and validation dataloaders for probing."""
+    #data_path = "/scratch/DL25SP"
     data_path = "/scratch/DL25SP"
 
     probe_train_ds = create_wall_dataloader(
