@@ -193,7 +193,8 @@ def load_model(checkpoint_path=None):
     
     if checkpoint_path is not None and os.path.exists(checkpoint_path):
         print(f"Loading model weights from {checkpoint_path}...")
-        model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"))
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+
     else:
         print("No checkpoint provided or file not found, initializing from scratch.")
 
@@ -223,7 +224,7 @@ def evaluate_model(device, model, probe_train_ds, probe_val_ds):
 if __name__ == "__main__":
     device = get_device()
     #model = load_model()
-    checkpoint_path = "results/model_weights.pth" 
+    checkpoint_path = "model_weights.pth" 
     model = load_model(checkpoint_path)
     model = model.to(device)
 
