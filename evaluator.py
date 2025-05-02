@@ -128,7 +128,7 @@ class ProbingEvaluator:
 
                 assert pred_encs.ndim == 3, f"Expected 3D tensor for pred_encs, got {pred_encs.shape}"
 
-                # Make sure pred_encs has shape (T, BS, D) at this point
+               
                 ################################################################################
 
                 pred_encs = pred_encs.detach()
@@ -239,7 +239,7 @@ class ProbingEvaluator:
             # # BS, T, D --> T, BS, D
             pred_encs = pred_encs.transpose(0, 1)
 
-            # Make sure pred_encs has shape (T, BS, D) at this point
+            
             ################################################################################
 
             target = getattr(batch, "locations").cuda()
